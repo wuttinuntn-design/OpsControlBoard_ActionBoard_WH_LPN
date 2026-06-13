@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Ops Control Board — WH LPN</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --teal:#3fa9b4;--teal-d:#2d8a94;--teal-l:#e0f4f6;
+  --red:#dc2626;--red-l:#fee2e2;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --green:#16a34a;--green-l:#dcfce7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --orange:#c2410c;
+  --bg:#f1f5f9;--white:#fff;--surf2:#f8fafc;
+  --border:#e2e8f0;--text:#0f172a;--muted:#64748b;--hint:#94a3b8;
+  --rsm:10px;--rxs:8px;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+  --sh:0 1px 3px rgba(0,0,0,.06);--shmd:0 4px 16px rgba(0,0,0,.1);
+}
+body{font-family:Sarabun,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;padding-bottom:calc(80px + var(--sb))}
+button,select,input,textarea{font-family:Sarabun,sans-serif}
+.hdr{background:var(--white);border-bottom:3px solid var(--teal);position:sticky;top:0;z-index:200;padding-top:var(--st);box-shadow:var(--sh)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;max-width:720px;margin:0 auto}
+.hdr-left h1{font-family:"IBM Plex Sans",Sarabun,sans-serif;font-size:.95rem;font-weight:700;color:var(--text)}
+.hdr-left h1 span{color:var(--teal)}
+.hdr-left p{font-size:.7rem;color:var(--muted);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.date-pill{background:var(--teal);color:#fff;border-radius:20px;padding:5px 10px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.date-pill svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sync-btn{background:var(--teal-l);border:none;border-radius:20px;padding:5px 10px;font-size:.72rem;font-weight:600;color:var(--teal-d);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s}
+.sync-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sync-btn.spinning svg{animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.tabs{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:57px;z-index:190;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs-in{display:flex;padding:0 12px;max-width:720px;margin:0 auto}
+.tab{padding:10px 16px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;user-select:none}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal)}
+.page{display:none;max-width:720px;margin:0 auto;padding:14px 14px 20px}
+.page.on{display:block}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.kpi{background:var(--white);border-radius:var(--rsm);border:1px solid var(--border);padding:12px 13px;display:flex;align-items:center;gap:11px;box-shadow:var(--sh)}
+.kpi-ico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-ico svg{width:20px;height:20px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.kpi-val{font-family:"IBM Plex Sans",Sarabun,sans-serif;font-size:1.65rem;font-weight:700;line-height:1}
+.kpi-lbl{font-size:.7rem;color:var(--muted);margin-top:2px}
+.k-red .kpi-ico{background:var(--red-l)}.k-red .kpi-ico svg{stroke:var(--red)}.k-red .kpi-val{color:var(--red)}
+.k-amber .kpi-ico{background:var(--amber-l)}.k-amber .kpi-ico svg{stroke:var(--amber)}.k-amber .kpi-val{color:var(--amber)}
+.k-purple .kpi-ico{background:var(--purple-l)}.k-purple .kpi-ico svg{stroke:var(--purple)}.k-purple .kpi-val{color:var(--purple)}
+.k-teal .kpi-ico{background:var(--teal-l)}.k-teal .kpi-ico svg{stroke:var(--teal-d)}.k-teal .kpi-val{color:var(--teal-d)}
+.filter{background:var(--white);border-radius:var(--rsm);border:1px solid var(--border);padding:9px 12px;margin-bottom:11px;box-shadow:var(--sh)}
+.filter-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.filter-lbl{font-size:.76rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.chip{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surf2);font-size:.77rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none}
+.chip.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700}
+.sec{display:flex;align-items:center;gap:6px;margin:14px 0 7px 1px}
+.sec svg{width:15px;height:15px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sec span{font-size:.81rem;font-weight:700}
+.s-ov svg{stroke:var(--red)}.s-ov span{color:var(--red)}
+.s-pa svg{stroke:var(--purple)}.s-pa span{color:var(--purple)}
+.s-ip svg{stroke:var(--amber)}.s-ip span{color:var(--amber)}
+.s-op svg{stroke:var(--muted)}.s-op span{color:var(--muted)}
+.s-dn svg{stroke:var(--green)}.s-dn span{color:var(--green)}
+.cards{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--white);border-radius:var(--rsm);border:1px solid var(--border);border-left-width:4px;cursor:pointer;box-shadow:var(--sh);transition:box-shadow .15s}
+.card:active{box-shadow:var(--shmd)}
+.c-red{border-left-color:var(--red)}.c-amber{border-left-color:var(--amber)}
+.c-purple{border-left-color:var(--purple)}.c-green{border-left-color:var(--green)}.c-gray{border-left-color:var(--hint)}
+.card-in{padding:10px 12px}
+.cr1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.ctitle{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.35;flex:1}
+.tb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+.tb-ma{background:var(--blue-l);color:var(--blue)}
+.tb-sf{background:var(--amber-l);color:var(--orange)}
+.tb-gmp{background:var(--green-l);color:var(--green)}
+.tb-5s{background:var(--purple-l);color:var(--purple)}
+.cr2{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ph{background:var(--red)}.pm{background:var(--amber)}.pl{background:var(--green)}
+.mi{display:flex;align-items:center;gap:3px;font-size:.73rem;color:var(--muted)}
+.mi svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.mi-ov{color:var(--red);font-weight:700}
+.cr3{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap}
+.cr3l{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.sb{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.sb-ov{background:var(--red);color:#fff}.sb-op{background:var(--red-l);color:var(--red)}
+.sb-ip{background:var(--amber-l);color:var(--amber)}.sb-pa{background:var(--purple-l);color:var(--purple)}
+.sb-dn{background:var(--green-l);color:var(--green)}.sb-rj{background:#f1f5f9;color:var(--muted)}
+.eapp{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;background:var(--purple-l);color:var(--purple);white-space:nowrap}
+.eapp svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2}
+.email-tag{font-size:.7rem;color:var(--orange);font-weight:700;white-space:nowrap}
+.cost-tag{font-size:.76rem;font-weight:700;color:var(--green);white-space:nowrap}
+.photo-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surf2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.photo-btn svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty svg{width:44px;height:44px;stroke:var(--border);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px}
+.empty p{font-size:.83rem}
+.fab{position:fixed;right:18px;bottom:calc(20px + var(--sb));width:52px;height:52px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(63,169,180,.45);z-index:150;transition:all .2s}
+.fab:active{transform:scale(.92);background:var(--teal-d)}
+.fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ov{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .24s}
+.ov.on{opacity:1;pointer-events:auto}
+.drw{position:fixed;bottom:0;left:0;right:0;z-index:301;background:var(--white);border-radius:20px 20px 0 0;max-height:93vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.drw.on{transform:translateY(0)}
+.drw-han{width:36px;height:4px;background:var(--border);border-radius:2px;margin:11px auto 0}
+.drw-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:1}
+.drw-title{font-size:.97rem;font-weight:700;color:var(--text)}
+.drw-x{width:28px;height:28px;border-radius:50%;background:var(--surf2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.drw-x svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round}
+.drw-body{padding:13px 16px calc(18px + var(--sb))}
+.fsec{font-size:.69rem;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:.5px;padding-bottom:5px;border-bottom:2px solid var(--teal-l);margin:14px 0 9px}
+.fsec:first-child{margin-top:0}
+.fr{margin-bottom:10px}
+.fr label{display:block;font-size:.77rem;font-weight:600;color:var(--muted);margin-bottom:3px}
+.fr .req{color:var(--red);margin-left:2px}
+.fr input,.fr select,.fr textarea{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--rxs);font-size:.87rem;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+.fr input:focus,.fr select:focus,.fr textarea:focus{border-color:var(--teal)}
+.fr textarea{resize:vertical;min-height:64px;line-height:1.6}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tgl-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.tgl-lbl{font-size:.84rem;font-weight:500;color:var(--text)}
+.tgl{width:44px;height:26px;border-radius:13px;background:var(--border);cursor:pointer;position:relative;transition:background .2s;border:none;flex-shrink:0}
+.tgl.on{background:var(--teal)}
+.tgl::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.tgl.on::after{transform:translateX(18px)}
+.cost-sec{display:none;margin-top:9px}
+.cost-sec.on{display:block}
+.btn-save{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:var(--rsm);font-size:.93rem;font-weight:700;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
+.btn-save:active{background:var(--teal-d);transform:scale(.98)}
+.btn-save:disabled{opacity:.6;cursor:not-allowed}
+.btn-save svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.btn-del{width:100%;padding:11px;background:transparent;color:var(--red);border:1.5px solid var(--red);border-radius:var(--rsm);font-size:.86rem;font-weight:600;cursor:pointer;margin-top:6px;transition:all .2s}
+.btn-del:active{background:var(--red-l)}
+.df{padding:8px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.df:last-child{border-bottom:none}
+.df-lbl{font-size:.67rem;font-weight:700;color:var(--hint);text-transform:uppercase;letter-spacing:.3px}
+.df-val{font-size:.87rem;font-weight:500;color:var(--text);line-height:1.5}
+.df-val a{color:var(--teal-d);text-decoration:underline}
+.ssteps{display:flex;align-items:center;gap:3px;margin:9px 0 5px}
+.ss{width:26px;height:26px;border-radius:50%;font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);color:var(--hint);background:var(--white);flex-shrink:0}
+.ss.sd{background:var(--green);color:#fff;border-color:var(--green)}
+.ss.sa{background:var(--teal);color:#fff;border-color:var(--teal)}
+.ss-line{flex:1;height:2px;background:var(--border)}
+.det-acts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+.btn-edit{padding:11px;background:var(--teal);color:#fff;border:none;border-radius:var(--rsm);font-size:.86rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-edit svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.2}
+.btn-done{padding:11px;background:var(--surf2);color:var(--text);border:1.5px solid var(--border);border-radius:var(--rsm);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+.toast{position:fixed;bottom:calc(26px + var(--sb));left:50%;transform:translateX(-50%) translateY(14px);background:var(--text);color:#fff;padding:9px 18px;border-radius:20px;font-size:.8rem;font-weight:600;opacity:0;transition:all .27s;z-index:500;white-space:nowrap;pointer-events:none;box-shadow:0 3px 14px rgba(0,0,0,.16)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;display:inline-block}
+.skel{background:linear-gradient(90deg,var(--border) 25%,var(--surf2) 50%,var(--border) 75%);background-size:200%;animation:shim 1.2s infinite;border-radius:9px;height:86px;margin-bottom:8px}
+@keyframes shim{to{background-position:-200% 0}}
+.coming{text-align:center;padding:56px 20px;color:var(--muted)}
+.coming svg{width:48px;height:48px;stroke:var(--border);fill:none;stroke-width:1.5;display:block;margin:0 auto 12px}
+.coming h3{font-size:.97rem;font-weight:700;color:var(--text);margin-bottom:5px}
+.coming p{font-size:.8rem}
+@media(min-width:600px){
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr)}
+  .page{padding:16px 16px 24px}
+  .fab{right:24px;bottom:24px}
+  body{padding-bottom:0}
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-left">
+      <h1>Ops Control Board <span>WH LPN</span></h1>
+      <p>คลังสินค้าลำพูน · NIM Express</p>
+    </div>
+    <div class="hdr-right">
+      <div class="date-pill">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="hdr-date"></span>
+      </div>
+      <button class="sync-btn" id="sync-btn" onclick="loadData()">
+        <svg viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Sync
+      </button>
+    </div>
+  </div>
+</header>
+<nav class="tabs">
+  <div class="tabs-in">
+    <div class="tab on" id="tab-ab" onclick="showTab('ab')">Action Board</div>
+    <div class="tab" id="tab-pm" onclick="showTab('pm')">PM Schedule</div>
+    <div class="tab" id="tab-gmp" onclick="showTab('gmp')">GMP / 5ส</div>
+    <div class="tab" id="tab-rp" onclick="showTab('rp')">รายงาน</div>
+  </div>
+</nav>
+<div class="page on" id="page-ab">
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+  </div>
+  <div class="filter">
+    <div class="filter-row">
+      <span class="filter-lbl">ประเภท:</span>
+      <span class="chip on" data-v="ALL" onclick="setChip(this)">ทั้งหมด</span>
+      <span class="chip" data-v="MA" onclick="setChip(this)">MA</span>
+      <span class="chip" data-v="Safety" onclick="setChip(this)">Safety</span>
+      <span class="chip" data-v="GMP" onclick="setChip(this)">GMP</span>
+      <span class="chip" data-v="5ส" onclick="setChip(this)">5ส</span>
+    </div>
+  </div>
+  <div id="card-list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+</div>
+<div class="page" id="page-pm"><div class="coming"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>PM Schedule</h3><p>กำลังพัฒนา</p></div></div>
+<div class="page" id="page-gmp"><div class="coming"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><h3>GMP / 5ส</h3><p>กำลังพัฒนา</p></div></div>
+<div class="page" id="page-rp"><div class="coming"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><h3>รายงาน</h3><p>กำลังพัฒนา</p></div></div>
+<button class="fab" id="fab" onclick="openAdd()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<div class="ov" id="ov" onclick="closeAll()"></div>
+<div class="drw" id="drw-form">
+  <div class="drw-han"></div>
+  <div class="drw-hdr"><span class="drw-title" id="form-title">เพิ่ม Action ใหม่</span><button class="drw-x" onclick="closeAll()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="drw-body">
+    <input type="hidden" id="f-ridx">
+    <div class="fsec">ข้อมูลหลัก</div>
+    <div class="fr"><label>ชื่องาน / Issue <span class="req">*</span></label><input id="f-title" placeholder="ระบุปัญหาหรืองานที่ต้องทำ..." maxlength="200"></div>
+    <div class="f2">
+      <div class="fr"><label>ประเภท <span class="req">*</span></label><select id="f-type"><option value="">เลือก...</option><option>MA</option><option>Safety</option><option>GMP</option><option>5ส</option></select></div>
+      <div class="fr"><label>แผนก <span class="req">*</span></label><select id="f-dept"><option value="">เลือก...</option><option>Maintenance</option><option>Safety</option><option>Inbound</option><option>Outbound-SO</option><option>Outbound-STO</option><option>ธุรการ</option></select></div>
+    </div>
+    <div class="fr"><label>ผู้รับผิดชอบ <span class="req">*</span></label><input id="f-owner" placeholder="ชื่อบุคคล" list="dl-own"><datalist id="dl-own"><option>นริน ม.</option><option>จักรพันธ์ จ.</option><option>ลิปดา ช.</option><option>สมศักดิ์ พ.</option><option>ภาคิณ ย.</option><option>นิธิกร ค.</option><option>สุรศักดิ์ ต.</option><option>อนุชา ย.</option></datalist></div>
+    <div class="fsec">วันที่ & สถานะ</div>
+    <div class="f2">
+      <div class="fr"><label>วันที่พบ <span class="req">*</span></label><input id="f-found" type="date"></div>
+      <div class="fr"><label>Due Date <span class="req">*</span></label><input id="f-due" type="date"></div>
+    </div>
+    <div class="f2">
+      <div class="fr"><label>Priority</label><select id="f-pri"><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="fr"><label>Status</label><select id="f-status" onchange="onStCh()"><option>Open</option><option>In Progress</option><option>Pending Approve</option><option>Done</option><option>Rejected</option></select></div>
+    </div>
+    <div class="fr" id="row-close" style="display:none"><label>วันที่ปิดจริง</label><input id="f-close" type="date"></div>
+    <div class="fsec">Root Cause & หมายเหตุ</div>
+    <div class="fr"><label>Root Cause</label><textarea id="f-root" placeholder="สาเหตุที่แท้จริง..." rows="2"></textarea></div>
+    <div class="fr"><label>หมายเหตุ / ความคืบหน้า</label><textarea id="f-note" placeholder="สถานะล่าสุด / action ถัดไป..." rows="2"></textarea></div>
+    <div class="fsec">ค่าใช้จ่าย & การอนุมัติ</div>
+    <div class="tgl-row"><span class="tgl-lbl">มีค่าใช้จ่าย?</span><button class="tgl" id="tgl-cost" onclick="tglCost()"></button></div>
+    <div class="cost-sec" id="cost-sec">
+      <div class="f2" style="margin-top:9px">
+        <div class="fr"><label>Estimated Cost (฿)</label><input id="f-cost" type="number" placeholder="0" min="0"></div>
+        <div class="fr"><label>E-Approve No.</label><input id="f-eapp" placeholder="EA-2026-..."></div>
+      </div>
+      <div class="tgl-row"><span class="tgl-lbl">ส่ง Email แจ้งแล้ว?</span><button class="tgl" id="tgl-email" onclick="tglEmail()"></button></div>
+    </div>
+    <div class="fsec">รูปภาพหลักฐาน</div>
+    <div class="fr"><label>ลิงก์รูป (Google Drive URL)</label><input id="f-photo" type="url" placeholder="https://drive.google.com/..."></div>
+    <button class="btn-save" id="btn-save" onclick="submitForm()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span id="btn-lbl">บันทึก Action</span></button>
+    <button class="btn-del" id="btn-del" style="display:none" onclick="delItem()">ลบรายการนี้</button>
+  </div>
+</div>
+<div class="drw" id="drw-det">
+  <div class="drw-han"></div>
+  <div class="drw-hdr"><span class="drw-title">รายละเอียด</span><button class="drw-x" onclick="closeAll()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="drw-body" id="det-body"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var API = 'https://script.google.com/macros/s/AKfycbyuGbO5_PrZo1_sxcfEF55izNOV_GutM_5RF74T4TBQxFQfnbJHkxPxKDvwlJqdX2kNfQ/exec';
+var DATA = [];
+var fType = 'ALL';
+var curDet = null;
+
+window.addEventListener('DOMContentLoaded', function() {
+  var d = new Date();
+  document.getElementById('hdr-date').textContent = d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+  document.getElementById('f-found').value = isoDate(d);
+  loadData();
+});
+
+function showTab(t) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('on'); });
+  document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+  document.getElementById('page-'+t).classList.add('on');
+  document.getElementById('tab-'+t).classList.add('on');
+  document.getElementById('fab').style.display = t === 'ab' ? 'flex' : 'none';
+}
+
+function loadData() {
+  var btn = document.getElementById('sync-btn');
+  btn.classList.add('spinning');
+  fetch(API)
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (!j.success) throw new Error(j.error || 'load error');
+      DATA = j.data || [];
+      renderKPI();
+      renderCards();
+      showToast('โหลดสำเร็จ ' + DATA.length + ' รายการ', 'ok');
+    })
+    .catch(function(e) {
+      showToast('โหลดไม่สำเร็จ: ' + e.message, 'err');
+      document.getElementById('kpi-grid').innerHTML = '';
+      document.getElementById('card-list').innerHTML = '<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>โหลดไม่สำเร็จ</p></div>';
+    })
+    .finally(function() { btn.classList.remove('spinning'); });
+}
+
+function postData(payload) {
+  return fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); })
+    .then(function(j) { if (!j.success) throw new Error(j.error || 'post error'); return j; });
+}
+
+function parseMyDate(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  var m1 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m1) return new Date(m1[3] + '-' + m1[2] + '-' + m1[1]);
+  var m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) return new Date(s);
+  var dt = new Date(s);
+  return isNaN(dt) ? null : dt;
+}
+
+function isOv(r) {
+  if (r.status === 'Done' || r.status === 'Rejected') return false;
+  if (!r.dueDate) return false;
+  var d = parseMyDate(r.dueDate);
+  if (!d) return false;
+  return d < new Date(new Date().toDateString());
+}
+
+function fmtD(v) {
+  if (!v) return '—';
+  var d = parseMyDate(v);
+  if (!d || isNaN(d)) return String(v);
+  return d.toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+}
+
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+function toIso(v) {
+  if (!v) return '';
+  v = String(v).trim();
+  var m1 = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m1) return m1[3] + '-' + m1[2] + '-' + m1[1];
+  var m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) return v;
+  try { return new Date(v).toISOString().slice(0,10); } catch(e) { return ''; }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderKPI() {
+  var tot = DATA.length;
+  var ov  = DATA.filter(isOv).length;
+  var ip  = DATA.filter(function(r){ return r.status === 'In Progress'; }).length;
+  var pa  = DATA.filter(function(r){ return r.status === 'Pending Approve'; }).length;
+  document.getElementById('kpi-grid').innerHTML =
+    mkKpi('k-red',   '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', ov,  'Overdue') +
+    mkKpi('k-amber', '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',                                              ip,  'In Progress') +
+    mkKpi('k-purple','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',                  pa,  'รออนุมัติ') +
+    mkKpi('k-teal',  '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>', tot, 'ทั้งหมด');
+}
+
+function mkKpi(cls, icon, val, lbl) {
+  return '<div class="kpi ' + cls + '"><div class="kpi-ico"><svg viewBox="0 0 24 24">' + icon + '</svg></div><div><div class="kpi-val">' + val + '</div><div class="kpi-lbl">' + lbl + '</div></div></div>';
+}
+
+function setChip(el) {
+  document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  fType = el.getAttribute('data-v');
+  renderCards();
+}
+
+function renderCards() {
+  var rows = fType === 'ALL' ? DATA.slice() : DATA.filter(function(r){ return r.type === fType; });
+  rows.sort(function(a, b) {
+    var ao = isOv(a), bo = isOv(b);
+    if (ao && !bo) return -1;
+    if (!ao && bo) return 1;
+    var ad = a.dueDate ? parseMyDate(a.dueDate) : null;
+    var bd = b.dueDate ? parseMyDate(b.dueDate) : null;
+    if (!ad && !bd) return 0;
+    if (!ad) return 1;
+    if (!bd) return -1;
+    return ad - bd;
+  });
+
+  if (!rows.length) {
+    document.getElementById('card-list').innerHTML = '<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>ไม่มีรายการ</p></div>';
+    return;
+  }
+
+  var SECS = [
+    { cls:'s-ov', icon:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', lbl:'Overdue — เกิน due date', fn: function(r){ return isOv(r); } },
+    { cls:'s-pa', icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',                  lbl:'รออนุมัติ',              fn: function(r){ return !isOv(r) && r.status === 'Pending Approve'; } },
+    { cls:'s-ip', icon:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',                                              lbl:'In Progress',            fn: function(r){ return !isOv(r) && r.status === 'In Progress'; } },
+    { cls:'s-op', icon:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', lbl:'Open',                   fn: function(r){ return !isOv(r) && r.status === 'Open'; } },
+    { cls:'s-dn', icon:'<polyline points="20 6 9 17 4 12"/>',                                                                               lbl:'Done',                   fn: function(r){ return !isOv(r) && r.status === 'Done'; } }
+  ];
+
+  var tbM  = { MA:'tb-ma', Safety:'tb-sf', GMP:'tb-gmp' };
+  tbM['5ส'] = 'tb-5s';
+  var acM  = { 'In Progress':'c-amber', 'Pending Approve':'c-purple', Done:'c-green', Rejected:'c-gray', Open:'c-gray' };
+  var sbM  = { Open:'sb-op', 'In Progress':'sb-ip', 'Pending Approve':'sb-pa', Done:'sb-dn', Rejected:'sb-rj' };
+  var prM  = { High:'ph', Medium:'pm', Low:'pl' };
+
+  var html = '';
+  SECS.forEach(function(sec) {
+    var items = rows.filter(sec.fn);
+    if (!items.length) return;
+    html += '<div class="sec ' + sec.cls + '"><svg viewBox="0 0 24 24">' + sec.icon + '</svg><span>' + sec.lbl + ' (' + items.length + ')</span></div><div class="cards">';
+    items.forEach(function(r) {
+      var ov    = isOv(r);
+      var st    = r.status || 'Open';
+      var hc    = r.hasCost === 'Yes';
+      var cost  = r.cost ? parseInt(r.cost).toLocaleString() : '';
+      var acCls = ov ? 'c-red' : (acM[st] || 'c-gray');
+      var sbCls = ov ? 'sb-ov' : (sbM[st] || 'sb-op');
+      var sbLbl = ov ? 'Overdue' : st;
+      var dueDisp = '';
+      if (ov && r.dueDate) {
+        var diff = Math.floor((new Date() - parseMyDate(r.dueDate)) / 864e5);
+        dueDisp = 'เกิน ' + diff + ' วัน';
+      } else {
+        dueDisp = fmtD(r.dueDate);
+      }
+      var rid = String(r.rowIndex);
+      html += '<div class="card ' + acCls + '" onclick="openDet(' + JSON.stringify(rid) + ')">' +
+        '<div class="card-in">' +
+          '<div class="cr1"><div class="ctitle">' + esc(r.title || '') + '</div>' + (r.type ? '<span class="tb ' + (tbM[r.type] || '') + '">' + esc(r.type) + '</span>' : '') + '</div>' +
+          '<div class="cr2">' +
+            '<div class="pdot ' + (prM[r.priority] || 'ph') + '"></div>' +
+            '<div class="mi"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + esc(r.owner || '—') + '</div>' +
+            '<div class="mi ' + (ov ? 'mi-ov' : '') + '"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' + dueDisp + '</div>' +
+          '</div>' +
+          '<div class="cr3"><div class="cr3l">' +
+            '<span class="sb ' + sbCls + '">' + sbLbl + '</span>' +
+            (r.eapp ? '<span class="eapp"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + esc(r.eapp) + '</span>' : '') +
+            (r.email === 'Yes' ? '<span class="email-tag">ส่ง Email แล้ว</span>' : '') +
+          '</div><div style="display:flex;align-items:center;gap:6px">' +
+            (hc && cost ? '<span class="cost-tag">฿ ' + cost + '</span>' : '') +
+            (r.photo ? '<div class="photo-btn" onclick="event.stopPropagation();window.open(' + JSON.stringify(r.photo) + ','_blank')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>' : '') +
+          '</div></div>' +
+        '</div></div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('card-list').innerHTML = html;
+}
+
+function openDet(rid) {
+  curDet = rid;
+  var r = DATA.find(function(x){ return String(x.rowIndex) === String(rid); });
+  if (!r) return;
+  var ov = isOv(r), st = r.status || 'Open';
+  var steps = ['Open', 'In Progress', 'Pending Approve', 'Done'];
+  var si = steps.indexOf(st);
+  var sh = steps.map(function(s, i) {
+    var c = i < si ? 'sd' : (i === si ? 'sa' : '');
+    var lb = { Open:'Open', 'In Progress':'WIP', 'Pending Approve':'Appv', Done:'Done' }[s] || s;
+    return (i > 0 ? '<div class="ss-line"></div>' : '') + '<div class="ss ' + c + '">' + lb + '</div>';
+  }).join('');
+  var hc = r.hasCost === 'Yes';
+  var b = '';
+  if (ov) b += '<div style="background:var(--red-l);border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;margin-bottom:11px;font-size:.81rem;font-weight:700;color:var(--red)">&#9888; Overdue — เกิน Due Date แล้ว</div>';
+  b += '<div style="font-size:.97rem;font-weight:700;margin-bottom:9px;line-height:1.4">' + esc(r.title || '') + '</div>';
+  b += '<div class="ssteps">' + sh + '</div>';
+  b += '<div class="df"><div class="df-lbl">ประเภท / แผนก</div><div class="df-val">' + esc(r.type || '—') + ' · ' + esc(r.dept || '—') + '</div></div>';
+  b += '<div class="df"><div class="df-lbl">ผู้รับผิดชอบ</div><div class="df-val">' + esc(r.owner || '—') + '</div></div>';
+  b += '<div class="df"><div class="df-lbl">Priority</div><div class="df-val">' + esc(r.priority || '—') + '</div></div>';
+  b += '<div class="df"><div class="df-lbl">วันที่พบ → Due Date</div><div class="df-val">' + fmtD(r.foundDate) + ' → <span style="color:' + (ov ? 'var(--red)' : 'inherit') + ';font-weight:' + (ov ? 700 : 500) + '">' + fmtD(r.dueDate) + '</span></div></div>';
+  if (r.closeDate) b += '<div class="df"><div class="df-lbl">ปิดจริง</div><div class="df-val">' + fmtD(r.closeDate) + '</div></div>';
+  if (r.rootCause) b += '<div class="df"><div class="df-lbl">Root Cause</div><div class="df-val">' + esc(r.rootCause) + '</div></div>';
+  if (hc) b += '<div class="df"><div class="df-lbl">ค่าใช้จ่าย / E-Approve</div><div class="df-val">&#3647; ' + parseInt(r.cost || 0).toLocaleString() + (r.eapp ? ' · ' + esc(r.eapp) : '') + '</div></div>';
+  if (r.email && r.email !== 'N/A') b += '<div class="df"><div class="df-lbl">Email</div><div class="df-val">' + (r.email === 'Yes' ? '&#10003; ส่งแล้ว' : 'ยังไม่ส่ง') + '</div></div>';
+  if (r.note) b += '<div class="df"><div class="df-lbl">หมายเหตุ</div><div class="df-val">' + esc(r.note) + '</div></div>';
+  if (r.photo) b += '<div class="df"><div class="df-lbl">รูปภาพ</div><div class="df-val"><a href="' + esc(r.photo) + '" target="_blank">ดูรูปภาพ</a></div></div>';
+  b += '<div class="det-acts">' +
+    '<button class="btn-edit" onclick="editFromDet()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> แก้ไข</button>' +
+    '<button class="btn-done" onclick="quickDone(' + JSON.stringify(rid) + ')">&#10003; ปิดงาน Done</button></div>';
+  document.getElementById('det-body').innerHTML = b;
+  openDrw('drw-det');
+}
+
+function quickDone(rid) {
+  var r = DATA.find(function(x){ return String(x.rowIndex) === String(rid); });
+  if (!r) return;
+  var d = {};
+  for (var k in r) d[k] = r[k];
+  d.status = 'Done';
+  d.closeDate = isoDate(new Date());
+  postData({ action:'update', rowIndex: rid, data: d })
+    .then(function(){ showToast('ปิดงาน Done เรียบร้อย', 'ok'); closeAll(); loadData(); })
+    .catch(function(e){ showToast('ไม่สำเร็จ: ' + e.message, 'err'); });
+}
+
+function editFromDet() {
+  var rid = curDet;
+  closeDrw('drw-det');
+  setTimeout(function(){ openEdit(rid); }, 220);
+}
+
+function openAdd() {
+  clrForm();
+  document.getElementById('f-ridx').value = '';
+  document.getElementById('form-title').textContent = 'เพิ่ม Action ใหม่';
+  document.getElementById('btn-lbl').textContent = 'บันทึก Action';
+  document.getElementById('btn-del').style.display = 'none';
+  document.getElementById('f-found').value = isoDate(new Date());
+  openDrw('drw-form');
+}
+
+function openEdit(rid) {
+  var r = DATA.find(function(x){ return String(x.rowIndex) === String(rid); });
+  if (!r) return;
+  clrForm();
+  document.getElementById('f-ridx').value    = rid;
+  document.getElementById('form-title').textContent = 'แก้ไข Action';
+  document.getElementById('btn-lbl').textContent    = 'บันทึกการแก้ไข';
+  document.getElementById('btn-del').style.display  = 'block';
+  document.getElementById('f-title').value  = r.title     || '';
+  document.getElementById('f-type').value   = r.type      || '';
+  document.getElementById('f-dept').value   = r.dept      || '';
+  document.getElementById('f-owner').value  = r.owner     || '';
+  document.getElementById('f-found').value  = toIso(r.foundDate);
+  document.getElementById('f-due').value    = toIso(r.dueDate);
+  document.getElementById('f-close').value  = toIso(r.closeDate);
+  document.getElementById('f-pri').value    = r.priority  || 'High';
+  document.getElementById('f-status').value = r.status    || 'Open';
+  document.getElementById('f-root').value   = r.rootCause || '';
+  document.getElementById('f-note').value   = r.note      || '';
+  document.getElementById('f-cost').value   = r.cost      || '';
+  document.getElementById('f-eapp').value   = r.eapp      || '';
+  document.getElementById('f-photo').value  = r.photo     || '';
+  var hc = r.hasCost === 'Yes';
+  var he = r.email   === 'Yes';
+  document.getElementById('tgl-cost').classList.toggle('on', hc);
+  document.getElementById('tgl-email').classList.toggle('on', he);
+  document.getElementById('cost-sec').classList.toggle('on', hc);
+  document.getElementById('row-close').style.display = r.status === 'Done' ? 'block' : 'none';
+  openDrw('drw-form');
+}
+
+function onStCh() {
+  document.getElementById('row-close').style.display = document.getElementById('f-status').value === 'Done' ? 'block' : 'none';
+}
+function tglCost() {
+  var t = document.getElementById('tgl-cost');
+  t.classList.toggle('on');
+  document.getElementById('cost-sec').classList.toggle('on', t.classList.contains('on'));
+}
+function tglEmail() { document.getElementById('tgl-email').classList.toggle('on'); }
+
+function submitForm() {
+  var title = document.getElementById('f-title').value.trim();
+  var type  = document.getElementById('f-type').value;
+  var dept  = document.getElementById('f-dept').value;
+  var owner = document.getElementById('f-owner').value.trim();
+  var found = document.getElementById('f-found').value;
+  var due   = document.getElementById('f-due').value;
+  if (!title || !type || !dept || !owner || !found || !due) {
+    showToast('กรอกข้อมูลที่มี * ให้ครบ', 'err'); return;
+  }
+  var hc  = document.getElementById('tgl-cost').classList.contains('on');
+  var he  = document.getElementById('tgl-email').classList.contains('on');
+  var st  = document.getElementById('f-status').value;
+  var rid = document.getElementById('f-ridx').value;
+  var isNew = rid === '';
+  var d = {
+    title: title, type: type, dept: dept, owner: owner,
+    foundDate: found, dueDate: due,
+    closeDate: st === 'Done' ? document.getElementById('f-close').value : '',
+    priority: document.getElementById('f-pri').value,
+    status: st,
+    rootCause: document.getElementById('f-root').value.trim(),
+    hasCost: hc ? 'Yes' : 'No',
+    cost:  hc ? document.getElementById('f-cost').value  : '',
+    eapp:  hc ? document.getElementById('f-eapp').value.trim() : '',
+    email: hc ? (he ? 'Yes' : 'No') : 'N/A',
+    photo: document.getElementById('f-photo').value.trim(),
+    note:  document.getElementById('f-note').value.trim()
+  };
+  var btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div>';
+  var payload = isNew ? { action:'add', data:d } : { action:'update', rowIndex:rid, data:d };
+  postData(payload)
+    .then(function(){ showToast(isNew ? 'เพิ่มสำเร็จ' : 'แก้ไขสำเร็จ', 'ok'); closeAll(); loadData(); })
+    .catch(function(e){ showToast('บันทึกไม่สำเร็จ: ' + e.message, 'err'); })
+    .finally(function(){
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span id="btn-lbl">' + (isNew ? 'บันทึก Action' : 'บันทึกการแก้ไข') + '</span>';
+    });
+}
+
+function delItem() {
+  if (!confirm('ยืนยันลบรายการนี้?')) return;
+  var rid = document.getElementById('f-ridx').value;
+  postData({ action:'delete', rowIndex:rid })
+    .then(function(){ showToast('ลบสำเร็จ', 'ok'); closeAll(); loadData(); })
+    .catch(function(){ showToast('ลบไม่สำเร็จ', 'err'); });
+}
+
+function clrForm() {
+  ['f-title','f-owner','f-root','f-note','f-cost','f-eapp','f-photo','f-close'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-type').value   = '';
+  document.getElementById('f-dept').value   = '';
+  document.getElementById('f-pri').value    = 'High';
+  document.getElementById('f-status').value = 'Open';
+  document.getElementById('tgl-cost').classList.remove('on');
+  document.getElementById('tgl-email').classList.remove('on');
+  document.getElementById('cost-sec').classList.remove('on');
+  document.getElementById('row-close').style.display = 'none';
+}
+
+function openDrw(id) {
+  document.getElementById('ov').classList.add('on');
+  document.getElementById(id).classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrw(id) { document.getElementById(id).classList.remove('on'); }
+function closeAll() {
+  document.querySelectorAll('.drw').forEach(function(d){ d.classList.remove('on'); });
+  document.getElementById('ov').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (type ? ' ' + type : '');
+  setTimeout(function(){ t.classList.remove('on'); }, 2800);
+}
+</script>
+</body>
+</html>
